@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Página de "cerrado por ahora". Mientras está puesta, brosin.app no
+     enseña el mapa a nadie: ni locales, ni datos, ni precios. La web de
+     verdad sigue en publico/ y vuelve a subirse tal cual para abrir.
+     Que no la guarde Google mientras tanto: -->
+<meta name="robots" content="noindex, nofollow">
+<title>Brosin · muy pronto</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;text-align:center;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0A0A0A;
+       background:linear-gradient(180deg,#FFD400 0%,#FFE766 60%,#FFF6C2 100%)}
+  main{padding:24px}
+  h1{font-size:44px;margin:0 0 8px;letter-spacing:-1px}
+  p{font-size:18px;margin:0}
+  a.cta{display:inline-block;margin-top:22px;background:#0A0A0A;color:#FFD400;text-decoration:none;
+        font-weight:700;padding:14px 22px;border-radius:14px;font-size:16px}
+  .sub{font-size:14px;margin-top:10px;opacity:.75}
+</style>
+</head>
+<body>
+<main>
+  <h1>Brosin</h1>
+  <p>Muy pronto.</p>
+  <a class="cta" href="formulario.html">¿Tienes un local? Añádelo gratis →</a>
+  <p class="sub">Have a shop or club? Add it for free · Du hast einen Laden? Trag ihn kostenlos ein</p>
+</main>
+<script>
+/* Quien ya entró antes tiene la app guardada en el móvil (service
+   worker). Se le quita para que vea esta página y no la copia vieja. */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+}
+if (window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+</script>
+</body>
+</html>

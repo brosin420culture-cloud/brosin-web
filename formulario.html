@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFFFFF">
+<title>Brosin · Añade tu local</title>
+<link rel="icon" href="assets/favicon-48.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<script>(function(){try{var t=localStorage.getItem('brosin_theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+<meta name="robots" content="noindex, follow">
+<style>
+/* Poppins autoalojada, igual que en index.html. Antes esta página la
+   pedía a Google Fonts, lo que mandaba la IP de cada visitante a un
+   tercero — justo lo que el aviso legal dice que NO pasa. Y encima las
+   fuentes ya estaban descargadas en assets/fonts para la app. */
+@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:swap;src:url('assets/fonts/poppins-400.woff') format('woff')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:swap;src:url('assets/fonts/poppins-500.woff') format('woff')}
+@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('assets/fonts/poppins-700.woff') format('woff')}
+
+/* BROSIN · tokens del Manual de Marca v3 (cap. 8.2) */
+:root{
+  --amarillo:#FFD400; --negro:#0A0A0A; --blanco:#FFFFFF; --morado:#9013FE;
+  --carbon:#121212; --panal:#2A2A2A; --humo:#BDBDBD;
+  --font:'Poppins',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --r-card:22px; --r-chip:16px; --r-pill:999px;
+  /* Semánticas — MODO CLARO por defecto (tabla 4.3) */
+  --bg:#FFFFFF; --card:#FFFFFF; --borde:rgba(10,10,10,.10);
+  --texto:#0A0A0A; --texto-2:rgba(10,10,10,.62); --acento-txt:#0A0A0A; --focus:#0A0A0A;
+  --dots:radial-gradient(rgba(10,10,10,.07) 1.1px,transparent 1.2px);
+  --input-bg:#F7F7F7; --input-bd:rgba(10,10,10,.18); --intro-bg:#F7F7F7;
+  --soon-bg:#FFD400; --soon-txt:#0A0A0A; --soon-bd:transparent; --header-bg:#FFD400;
+}
+html[data-theme="dark"]{
+  --bg:#0A0A0A; --card:#121212; --borde:#2A2A2A;
+  --texto:#FFFFFF; --texto-2:#BDBDBD; --acento-txt:#FFD400; --focus:#FFD400;
+  --dots:radial-gradient(rgba(255,212,0,.09) 1.1px,transparent 1.2px);
+  --input-bg:#0A0A0A; --input-bd:#2A2A2A; --intro-bg:#121212;
+  --soon-bg:#0A0A0A; --soon-txt:#FFD400; --soon-bd:#2A2A2A; --header-bg:#0A0A0A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--texto);font-family:var(--font);font-size:16px;line-height:1.6;transition:background .25s,color .25s}
+img{display:block}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 90px}
+header{background:var(--header-bg);padding:44px 16px 26px;text-align:center;background-image:var(--dots);background-size:26px 26px;border-bottom:1px solid var(--borde)}
+header .logo{width:min(52vw,230px);height:auto;margin:0 auto 14px}
+html[data-theme="light"] .logo-dark{display:none}
+html[data-theme="dark"] .logo-light{display:none}
+header h1{font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+header p{margin:10px auto 0;max-width:52ch;font-size:14.5px;color:var(--texto-2)}
+header p b{color:var(--texto)}
+.intro{background:var(--intro-bg);border:1px solid var(--borde);border-left:4px solid var(--amarillo);color:var(--texto-2);border-radius:0 var(--r-chip) var(--r-chip) 0;padding:13px 16px;font-size:14px;margin:18px 0}
+.intro b{color:var(--texto)}
+.card{background:var(--card);border:1px solid var(--borde);border-radius:var(--r-card);padding:20px;box-shadow:0 6px 24px rgba(10,10,10,.05)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:12.5px;font-weight:700;margin:10px 0 4px;color:var(--texto-2)}
+/* La trampa para bots: fuera de pantalla, no "display:none" — algunos
+   bots ya saben saltarse lo que está oculto con display. */
+.trampa{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+label .req{display:inline-block;background:var(--amarillo);color:var(--negro);font-size:10px;line-height:1;padding:3px 5px;border-radius:6px;vertical-align:middle;transform:translateY(-1px)}
+html[data-theme="dark"] label .req{background:transparent;color:var(--amarillo);padding:0;font-size:inherit;transform:none}
+input,select,textarea{width:100%;font-family:inherit;font-size:16px;padding:12px;border:1px solid var(--input-bd);border-radius:var(--r-chip);background:var(--input-bg);color:var(--texto)}
+input::placeholder,textarea::placeholder{color:var(--texto-2);opacity:.7}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--focus)}
+select option{background:var(--card);color:var(--texto)}
+textarea{resize:vertical;min-height:80px}
+.full{grid-column:1/-1}
+.consent{display:flex;gap:10px;align-items:flex-start;background:var(--input-bg);border:1px solid var(--borde);border-radius:var(--r-chip);padding:13px 14px;margin-top:16px;font-size:13.5px;color:var(--texto-2)}
+.consent b{color:var(--texto)}
+.consent input{width:auto;margin-top:3px;flex:none;accent-color:var(--amarillo)}
+.btn{width:100%;margin-top:16px;background:var(--amarillo);color:var(--negro);font-family:inherit;font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase;border:none;border-radius:var(--r-chip);padding:16px;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:default}
+.legal{font-size:12px;color:var(--texto-2);margin-top:12px;text-align:center;opacity:.9}
+.ok{display:none;text-align:center;background:var(--card);border:1px solid var(--borde);color:var(--texto);border-radius:var(--r-card);padding:40px 24px;background-image:var(--dots);background-size:26px 26px}
+.ok img{height:130px;width:auto;margin:0 auto 8px}
+.ok h2{color:var(--texto);font-size:22px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:10px 0}
+.ok p{color:var(--texto-2);max-width:36ch;margin:0 auto}
+.ok .pill{display:inline-block;margin-top:16px;background:var(--soon-bg);border:1px solid var(--soon-bd);border-radius:var(--r-pill);padding:6px 15px;font-size:11.5px;font-weight:700;color:var(--soon-txt)}
+.err{display:none;background:#241012;border:1px solid #5a2626;color:#ff8a8a;border-radius:var(--r-chip);padding:12px 14px;font-size:14px;margin-top:12px;text-align:center}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
+/* Controles tema + idioma */
+#brosinCtrls{position:fixed;top:12px;right:12px;z-index:9998;display:flex;gap:8px;align-items:center}
+#brosinTheme{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--borde);border-radius:var(--r-pill);color:var(--texto);cursor:pointer;padding:0}
+#brosinTheme svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#brosinLang{font-family:var(--font);font-size:13px;font-weight:600;background:var(--card);color:var(--texto);border:1px solid var(--borde);border-radius:var(--r-pill);padding:7px 12px;cursor:pointer}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo logo-dark" src="assets/logo-amarillo.png" alt="Brosin">
+  <img class="logo logo-light" src="assets/logo-negro.png" alt="Brosin">
+  <h1 data-i18n="f_title">Añade tu local a Brosin</h1>
+  <p data-i18n="f_intro">Rellena los datos de tu club, grow shop o tienda de CBD. Es gratis salir en el mapa. Al enviar, nos llegan directamente y te contactamos.</p>
+</header>
+<div class="wrap">
+  <div class="intro" data-i18n="f_note">Lo imprescindible es nombre, tipo, ciudad y dirección. El resto mejora tu ficha pero puede ir vacío.</div>
+
+  <form id="f" class="card" action="https://formsubmit.co/ajax/hola@brosin.app" method="POST">
+    <input type="hidden" name="_subject" value="Nuevo local para Brosin">
+    <input type="hidden" name="Ficha" id="fFicha" value="">
+    <input type="hidden" name="_template" value="table">
+    <!-- El captcha de formsubmit está apagado a propósito: este
+         formulario se envía por AJAX y su captcha es una página
+         intermedia que rompería el envío. La protección contra bots
+         se hace aquí abajo, con la trampa y el control de tiempo. -->
+    <input type="hidden" name="_captcha" value="false">
+    <input type="hidden" name="_honey" value="">
+
+    <!-- ── Trampa para bots ──────────────────────────────────────
+         Invisible y fuera del orden de tabulación: una persona no
+         la ve ni la puede rellenar. Los robots rellenan todo lo que
+         encuentran, así que si esto viene con algo, no se envía. -->
+    <div class="trampa" aria-hidden="true">
+      <label>No rellenes esto<input type="text" name="Web_empresa" tabindex="-1" autocomplete="off"></label>
+    </div>
+    <div class="grid">
+      <div class="full"><label><span data-i18n="l_nombre">Nombre del local</span> <span class="req">*</span></label><input name="Nombre" required placeholder="Ej: Brosin CSC" data-i18n-ph="ph_nombre"></div>
+      <div><label><span data-i18n="l_tipo">Tipo</span> <span class="req">*</span></label>
+        <select name="Tipo" required>
+          <option value="" data-i18n="opt_elige">Elige…</option>
+          <option value="Club Social de Cannabis (CSC)" data-i18n="opt_csc">Club Social de Cannabis (CSC)</option>
+          <option value="Grow shop" data-i18n="opt_grow">Grow shop</option>
+          <option value="Tienda de CBD" data-i18n="opt_cbd">Tienda de CBD</option>
+          <option value="Coffeeshop" data-i18n="opt_coffee">Coffeeshop</option>
+          <option value="Medicinal" data-i18n="opt_med">Medicinal</option>
+          <option value="Empresa del sector" data-i18n="opt_emp">Empresa del sector</option>
+        </select>
+      </div>
+      <div><label data-i18n="l_edad">¿Acceso solo adultos?</label>
+        <select name="Solo adultos"><option value="" data-i18n="opt_noind">No indicar</option><option>+18</option><option>+21</option></select>
+      </div>
+      <div><label><span data-i18n="l_pais">País</span> <span class="req">*</span></label>
+        <select name="Pais" id="fPais" required></select>
+      </div>
+      <div><label><span data-i18n="l_ciudad">Ciudad</span> <span class="req">*</span></label><input name="Ciudad" required placeholder="Ej: Torre del Mar" data-i18n-ph="ph_ciudad"></div>
+      <div class="full"><label data-i18n="l_prov">Provincia</label><input name="Provincia" placeholder="Provincia o región" data-i18n-ph="ph_prov"></div>
+      <div class="full"><label><span data-i18n="l_dir">Dirección completa</span> <span class="req">*</span></label><input name="Direccion" required placeholder="Calle, número, CP, ciudad" data-i18n-ph="ph_dir"></div>
+      <div><label data-i18n="l_tel">Teléfono / WhatsApp</label><input name="Telefono" placeholder="Ej: 600 000 000" data-i18n-ph="ph_tel"></div>
+      <div><label data-i18n="l_email">Email de contacto</label><input type="email" name="Email" placeholder="tucorreo@ejemplo.com" data-i18n-ph="ph_email"></div>
+      <div><label data-i18n="l_horario">Horario</label><input name="Horario" placeholder="Ej: L–S 12:00–23:30" data-i18n-ph="ph_horario"></div>
+      <div><label data-i18n="l_redes">Instagram / Web</label><input name="Instagram o web" placeholder="Ej: @tuclub o tuweb.es" data-i18n-ph="ph_redes"></div>
+      <div class="full"><label data-i18n="l_desc">Descripción corta</label><textarea name="Descripcion" placeholder="Ambiente, qué ofreces…" data-i18n-ph="ph_desc"></textarea></div>
+    </div>
+
+    <label class="consent">
+      <input type="checkbox" name="Consentimiento" value="Sí, soy responsable y autorizo aparecer en Brosin" required>
+      <span data-i18n="consent">Soy responsable de este local y autorizo que aparezca en Brosin con estos datos. Sé que puedo pedir la baja cuando quiera escribiendo a hola@brosin.app.</span>
+    </label>
+
+    <button class="btn" type="submit" id="btn" data-i18n="btn">Enviar mi local a Brosin</button>
+    <div class="err" id="err" data-i18n="err">Ups, algo falló al enviar. Inténtalo de nuevo o escríbenos a hola@brosin.app.</div>
+    <div class="legal" data-i18n="legal_form">Tus datos se tratan conforme al RGPD solo para gestionar tu alta en Brosin. Responsable: Brosin · hola@brosin.app. Solo +18.</div>
+  </form>
+
+  <div class="ok" id="ok">
+    <img src="assets/mascotas/abeja.png" alt="">
+    <h2 data-i18n="ok_title">¡Recibido, bro!</h2>
+    <p data-i18n="ok_msg">Ya tenemos tu local. Le echamos un ojo y te contactamos para dejarlo perfecto en el mapa. ¡Gracias por sumarte a la colmena!</p>
+    <div><span class="pill">Bro, no te quedes sin, Brosin.</span></div>
+  </div>
+</div>
+
+<script src="brosin-i18n.js?v=brosin-eu-1"></script>
+<script>
+var f=document.getElementById('f');
+
+/* ── País ─────────────────────────────────────────────────────────
+   Hasta ahora el formulario daba por hecho que el local era español
+   (Provincia a pelo) y un local de Malta o Portugal no sabía ni qué
+   poner. Ahora el país es un campo obligatorio: toda la UE, el EEE,
+   Suiza, Reino Unido y vecinos. El nombre de cada país sale en el
+   idioma del visitante (Intl.DisplayNames); si el navegador no lo
+   soporta, en inglés. Se puede preseleccionar desde la URL con
+   ?pais=DE (así los correos de cada país llegan con el suyo puesto). */
+(function(){
+  var sel=document.getElementById('fPais'); if(!sel) return;
+  var CODES=['ES','PT','FR','DE','AT','CH','IT','NL','BE','LU','IE','GB','DK','SE','NO','FI','IS','PL','CZ','SK','HU','SI','HR','RO','BG','GR','MT','CY','EE','LV','LT','AD','MC','LI','SM','UA','RS','BA','ME','MK','AL','MD','TR','GE'];
+  var EN={ES:'Spain',PT:'Portugal',FR:'France',DE:'Germany',AT:'Austria',CH:'Switzerland',IT:'Italy',NL:'Netherlands',BE:'Belgium',LU:'Luxembourg',IE:'Ireland',GB:'United Kingdom',DK:'Denmark',SE:'Sweden',NO:'Norway',FI:'Finland',IS:'Iceland',PL:'Poland',CZ:'Czechia',SK:'Slovakia',HU:'Hungary',SI:'Slovenia',HR:'Croatia',RO:'Romania',BG:'Bulgaria',GR:'Greece',MT:'Malta',CY:'Cyprus',EE:'Estonia',LV:'Latvia',LT:'Lithuania',AD:'Andorra',MC:'Monaco',LI:'Liechtenstein',SM:'San Marino',UA:'Ukraine',RS:'Serbia',BA:'Bosnia and Herzegovina',ME:'Montenegro',MK:'North Macedonia',AL:'Albania',MD:'Moldova',TR:'Türkiye',GE:'Georgia'};
+  /* idioma de la página → país por defecto, cuando la URL no lo trae */
+  var LANG2CC={es:'ES',pt:'PT',fr:'FR',de:'DE',nl:'NL',it:'IT',sv:'SE',pl:'PL',bg:'BG',hr:'HR',cs:'CZ',da:'DK',et:'EE',fi:'FI',el:'GR',hu:'HU',ga:'IE',lv:'LV',lt:'LT',mt:'MT',ro:'RO',sk:'SK',sl:'SI',no:'NO',uk:'UA',tr:'TR',en:'GB'};
+  function nombres(lang){
+    var dn=null;
+    try{ if(window.Intl&&Intl.DisplayNames) dn=new Intl.DisplayNames([lang,'en'],{type:'region'}); }catch(e){ dn=null; }
+    return CODES.map(function(c){ var n=''; try{ n=dn?dn.of(c):''; }catch(e){} if(!n||n===c) n=EN[c]; return {code:c,name:n}; })
+                .sort(function(a,b){ return a.name.localeCompare(b.name,lang); });
+  }
+  function pintar(lang){
+    sel.innerHTML='';
+    nombres(lang).forEach(function(p){ var o=document.createElement('option'); o.value=p.name; o.setAttribute('data-cc',p.code); o.textContent=p.name; sel.appendChild(o); });
+    var P=new URLSearchParams(location.search);
+    var cc=(P.get('pais')||'').toUpperCase();
+    if(!cc && actualCC) cc=actualCC;   /* al cambiar de idioma se conserva lo elegido */
+    if(!cc){ var nav=(navigator.language||'').split('-')[1]; if(nav && EN[nav.toUpperCase()]) cc=nav.toUpperCase(); }
+    if(!cc) cc=LANG2CC[lang]||'ES';
+    var o=sel.querySelector('option[data-cc="'+cc+'"]'); if(o) o.selected=true;
+    actualCC=cc;
+  }
+  var actualCC='';
+  sel.addEventListener('change',function(){ var o=sel.options[sel.selectedIndex]; actualCC=o?o.getAttribute('data-cc'):''; });
+  var lang=(window.BrosinI18n&&BrosinI18n.lang&&BrosinI18n.lang())||document.documentElement.lang||'es';
+  pintar(lang);
+  /* si cambian de idioma arriba a la derecha, los países se vuelven a escribir en ese idioma */
+  var ls=document.getElementById('brosinLang'); if(ls) ls.addEventListener('change',function(){ pintar(ls.value); });
+})();
+
+/* ── Prellenado desde la ficha del mapa ────────────────────────────
+   La app enlaza aquí con los datos que ya tenemos, para que el local
+   solo tenga que completar lo que falta (horario, web, descripción)
+   en vez de escribirlo todo otra vez. */
+(function(){
+  var P=new URLSearchParams(location.search);
+  if(!P.get('id')) return;
+
+  var TIPOS={csc:'Club Social de Cannabis (CSC)',grow:'Grow shop',cbd:'Tienda de CBD',
+             coffeeshop:'Coffeeshop',medicinal:'Medicinal',empresa:'Empresa del sector'};
+  function set(sel,val){ if(!val) return; var el=f.querySelector(sel); if(el) el.value=val; }
+
+  set('[name="Nombre"]',    P.get('nombre'));
+  set('[name="Ciudad"]',    P.get('ciudad'));
+  set('[name="Provincia"]', P.get('prov'));
+  set('[name="Direccion"]', P.get('dir'));
+  set('[name="Telefono"]',  P.get('tel'));
+  set('[name="Email"]',     P.get('email'));
+  set('[name="Instagram o web"]', P.get('web'));
+
+  var tipo=TIPOS[P.get('tipo')];
+  if(tipo){ var sel=f.querySelector('[name="Tipo"]');
+    for(var i=0;i<sel.options.length;i++) if(sel.options[i].text===tipo){ sel.selectedIndex=i; break; } }
+
+  var modo=P.get('modo')||'alta';
+  document.getElementById('fFicha').value='#'+P.get('id')+' ('+modo+')';
+  document.querySelector('[name="_subject"]').value =
+    (modo==='baja'  ? 'BAJA pedida · ficha #' :
+     modo==='error' ? 'Aviso de error en ficha #' :
+                      'Actualización de ficha #')+P.get('id');
+
+  /* ── Modo baja ────────────────────────────────────────────────
+     Quien viene a pedir la baja no viene a rellenar una ficha:
+     viene a irse. Pedirle horarios y descripción sería tomarle el
+     pelo. Se deja solo lo justo para saber quién es y poder
+     demostrar cuándo lo pidió, y se le quita el "required" a todo
+     lo demás para que pueda enviar en dos segundos. */
+  if(modo==='baja'){
+    /* Se cambian las CLAVES de traducción, no los textos.
+       Si escribiera aquí el castellano a pelo, un alemán que pulsa
+       "Eintrag entfernen" aterrizaría en una página en español — y la
+       puerta de salida es lo último que puede estar en un solo idioma.
+       Al final se vuelve a aplicar el idioma y se traduce todo. */
+    var poner=function(sel,clave){
+      var el=document.querySelector(sel); if(el) el.setAttribute('data-i18n',clave);
+    };
+    poner('header h1','b_title');
+    poner('header p','b_intro');
+    poner('.intro','b_note');
+    poner('#btn','b_btn');
+    poner('#ok h2','b_ok_t');
+    poner('#ok p','b_ok_m');
+    poner('.legal','b_legal');
+
+    /* fuera los campos que aquí no pintan nada */
+    ['Horario','Descripcion','Solo adultos','Instagram o web','Tipo','Provincia','Pais'].forEach(function(n){
+      var el=f.querySelector('[name="'+n+'"]'); if(el) el.closest('div').remove();
+    });
+    /* lo demás, opcional: ya tenemos sus datos */
+    f.querySelectorAll('[required]').forEach(function(el){ el.removeAttribute('required'); });
+    f.querySelectorAll('.req').forEach(function(el){ el.remove(); });
+
+    /* la casilla ya no es un permiso, es una declaración */
+    var chk=f.querySelector('[name="Consentimiento"]');
+    chk.name='Declaracion';
+    chk.value='Soy responsable de este local y pido la baja';
+    chk.setAttribute('required','required');
+    chk.parentNode.querySelector('span').setAttribute('data-i18n','b_decl');
+
+    /* qué quiere exactamente: no es lo mismo salir del mapa que
+       no querer estar guardado en ningún sitio */
+    var qué=document.createElement('div');
+    qué.className='full';
+    qué.innerHTML='<label data-i18n="b_que">¿Qué quieres?</label>'+
+      '<select name="Que pide" required>'+
+        '<option value="Quitadme del mapa" data-i18n="b_op1">Quitadme del mapa público</option>'+
+        '<option value="Borradme del todo" data-i18n="b_op2">Borradme del todo, tampoco quiero estar guardado</option>'+
+      '</select>';
+    f.querySelector('.grid').appendChild(qué);
+  }
+
+  /* Aviso arriba, para que se entienda qué está pasando */
+  var box=document.createElement('div');
+  box.className='intro';
+  box.style.cssText='background:#FFD400;color:#0A0A0A;border-color:#FFD400;font-weight:600';
+  var T=function(k,alt){ var v=window.BrosinI18n?BrosinI18n.t(k):''; return v||alt; };
+  box.textContent =
+    modo==='baja'  ? T('b_aviso','Vas a pedir la baja de «{n}». Comprueba que es tu local y envía.')
+                       .replace('{n}', P.get('nombre')||'') :
+    modo==='error' ? 'Estás avisando de un error en la ficha de "'+(P.get('nombre')||'')+'". Corrige lo que esté mal y envía.' :
+                     'Ya hemos rellenado lo que sabemos de "'+(P.get('nombre')||'')+'". Revísalo y completa lo que falte.';
+  var intro=document.querySelector('.intro');
+  intro.parentNode.insertBefore(box,intro);
+
+  /* Ahora que están puestas todas las claves, se traduce la página
+     entera al idioma de quien mira. Esto tiene que ir al final. */
+  if(modo==='baja' && window.BrosinI18n){
+    BrosinI18n.apply(BrosinI18n.lang());
+    /* La pestaña del navegador también: si dice "Añade tu local"
+       mientras estás pidiendo la baja, parece que te han colado otra cosa. */
+    document.title='Brosin · '+(document.querySelector('header h1').textContent||'');
+  }
+})();
+/* Momento en que se abrió la página. Una persona tarda como poco unos
+   segundos en rellenar doce campos; un bot tarda menos de uno. */
+var abiertoEn = Date.now();
+
+f.addEventListener('submit',function(e){
+  e.preventDefault();
+  var btn=document.getElementById('btn'); var err=document.getElementById('err');
+  var T=(window.BrosinI18n&&window.BrosinI18n.t)?window.BrosinI18n.t:function(k){return '';};
+
+  /* ── Anti-bots ────────────────────────────────────────────────
+     Si la trampa viene rellena, o si han pasado menos de 3 segundos
+     desde que se abrió la página, no es una persona. Se le enseña
+     la pantalla de "enviado" igual —para no darle al bot la pista
+     de qué le ha delatado— pero no se manda nada. */
+  var trampa=f.querySelector('[name="Web_empresa"]');
+  var demasiadoRapido = (Date.now()-abiertoEn) < 3000;
+  if((trampa && trampa.value) || demasiadoRapido){
+    f.style.display='none';
+    document.getElementById('ok').style.display='block';
+    return;
+  }
+  if(trampa) trampa.disabled=true;   /* que ni siquiera viaje */
+
+  err.style.display='none'; btn.disabled=true; btn.textContent=T('sending')||'Enviando…';
+  /* el asunto lleva el país, para clasificar el buzón de un vistazo */
+  var sub=f.querySelector('[name="_subject"]'); var pais=f.querySelector('[name="Pais"]');
+  if(sub && pais && pais.value && sub.value.indexOf(' · ')<0) sub.value=sub.value+' · '+pais.value;
+  /* Antes se enseñaba "¡Recibido!" sin mirar si FormSubmit había
+     aceptado el envío: varios locales lo mandaron repetido sin saber
+     si había llegado. Ahora solo se da por recibido si el servidor
+     contesta bien; si no, sale el aviso de error y se puede reintentar. */
+  fetch(f.action,{method:'POST',body:new FormData(f),headers:{'Accept':'application/json'}})
+  .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok, j:j}; }); })
+  .then(function(x){
+    var bien = x.ok && !(x.j && (x.j.success===false || x.j.success==='false'));
+    if(!bien) throw new Error('formsubmit');
+    f.style.display='none'; document.getElementById('ok').style.display='block'; window.scrollTo({top:0,behavior:'smooth'});
+  })
+  .catch(function(){ err.style.display='block'; btn.disabled=false; btn.textContent=T('btn')||'Enviar mi local a Brosin'; });
+});
+</script>
+</body>
+</html>
