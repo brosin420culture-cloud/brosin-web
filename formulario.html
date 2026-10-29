@@ -96,7 +96,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="wrap">
   <div class="intro" data-i18n="f_note">Lo imprescindible es nombre, tipo, ciudad y dirección. El resto mejora tu ficha pero puede ir vacío.</div>
 
-  <form id="f" class="card" action="https://formsubmit.co/ajax/hola@brosin.app" method="POST">
+  <form id="f" class="card" action="https://forminit.com/f/8kq58gbumyk" method="POST">
     <input type="hidden" name="_subject" value="Nuevo local para Brosin">
     <input type="hidden" name="Ficha" id="fFicha" value="">
     <input type="hidden" name="_template" value="table">
@@ -164,6 +164,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="brosin-i18n.js?v=brosin-eu-1"></script>
 <script>
 var f=document.getElementById('f');
+/* ══ A DÓNDE SE ENVÍA EL FORMULARIO: AQUÍ Y SOLO AQUÍ ══════════════
+   Forminit (datos en servidores de la UE). FormSubmit dejó de responder
+   el 29-oct-2026 (error 521) y los envíos se perdían: desde entonces se
+   manda aquí. Forminit solo guarda los campos «fi-tipo-nombre», así que
+   los nombres se traducen al enviar ("Nombre" → "fi-text-nombre"). */
+var ENVIO='https://forminit.com/f/8kq58gbumyk';
+f.action=ENVIO;
+function datosParaEnviar(){
+  var d=new FormData(f), o=new FormData();
+  d.forEach(function(v,k){
+    if(k.charAt(0)==='_' || k==='Web_empresa') return;
+    if(k==='Email'){ if(String(v).trim()) o.append('fi-sender-email',String(v).trim()); return; }
+    var n=k.toLowerCase().replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i').replace(/[óò]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
+           .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    o.append('fi-text-'+n,v);
+  });
+  return o;
+}
 
 /* ── País ─────────────────────────────────────────────────────────
    Hasta ahora el formulario daba por hecho que el local era español
@@ -338,11 +356,11 @@ f.addEventListener('submit',function(e){
      aceptado el envío: varios locales lo mandaron repetido sin saber
      si había llegado. Ahora solo se da por recibido si el servidor
      contesta bien; si no, sale el aviso de error y se puede reintentar. */
-  fetch(f.action,{method:'POST',body:new FormData(f),headers:{'Accept':'application/json'}})
+  fetch(ENVIO,{method:'POST',body:datosParaEnviar(),headers:{'Accept':'application/json'}})
   .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok, j:j}; }); })
   .then(function(x){
     var bien = x.ok && !(x.j && (x.j.success===false || x.j.success==='false'));
-    if(!bien) throw new Error('formsubmit');
+    if(!bien) throw new Error('envio');
     f.style.display='none'; document.getElementById('ok').style.display='block'; window.scrollTo({top:0,behavior:'smooth'});
   })
   .catch(function(){ err.style.display='block'; btn.disabled=false; btn.textContent=T('btn')||'Enviar mi local a Brosin'; });
