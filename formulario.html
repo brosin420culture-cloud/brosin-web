@@ -150,6 +150,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
     <button class="btn" type="submit" id="btn" data-i18n="btn">Enviar mi local a Brosin</button>
     <div class="err" id="err" data-i18n="err">Ups, algo falló al enviar. Inténtalo de nuevo o escríbenos a hola@brosin.app.</div>
+    <a id="errMail" href="mailto:hola@brosin.app" style="display:none;margin-top:10px;font-weight:700;text-align:center">✉ hola@brosin.app</a>
     <div class="legal" data-i18n="legal_form">Tus datos se tratan conforme al RGPD solo para gestionar tu alta en Brosin. Responsable: Brosin · hola@brosin.app. Solo +18.</div>
   </form>
 
@@ -175,7 +176,12 @@ function datosParaEnviar(){
   var d=new FormData(f), o=new FormData();
   d.forEach(function(v,k){
     if(k.charAt(0)==='_' || k==='Web_empresa') return;
-    if(k==='Email'){ if(String(v).trim()) o.append('fi-sender-email',String(v).trim()); return; }
+    /* El correo va SIEMPRE como texto (Forminit no lo valida) y, solo si
+       tiene formato completo, también como remitente. Antes iba solo como
+       remitente: un «nombre@empresa» sin «.nl», que el navegador da por
+       bueno, hacía que Forminit rechazara el envío entero (4-nov-2026). */
+    if(k==='Email'){ var em=String(v).trim(); if(em){ o.append('fi-text-email',em);
+      if(/^[^\s@;,]+@[^\s@;,]+\.[a-z]{2,}$/i.test(em)) o.append('fi-sender-email',em); } return; }
     var n=k.toLowerCase().replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i').replace(/[óò]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
            .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
     o.append('fi-text-'+n,v);
@@ -356,14 +362,38 @@ f.addEventListener('submit',function(e){
      aceptado el envío: varios locales lo mandaron repetido sin saber
      si había llegado. Ahora solo se da por recibido si el servidor
      contesta bien; si no, sale el aviso de error y se puede reintentar. */
-  fetch(ENVIO,{method:'POST',body:datosParaEnviar(),headers:{'Accept':'application/json'}})
-  .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok, j:j}; }); })
+  /* Forminit solo admite un envío cada 5 segundos por conexión. Si
+     contesta «espera» (429), se espera y se reintenta solo, hasta dos
+     veces; antes la persona volvía a pulsar enseguida y le salía el
+     error una y otra vez (4-nov-2026). */
+  var datos=datosParaEnviar();
+  function enviar(intento){
+    return fetch(ENVIO,{method:'POST',body:datos,headers:{'Accept':'application/json'}})
+    .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok, status:r.status, j:j}; }); })
+    .then(function(x){
+      var espera = x.status===429 || (x.j && x.j.error==='TOO_MANY_REQUESTS');
+      if(espera && intento<2) return new Promise(function(res){ setTimeout(res,6000); }).then(function(){ return enviar(intento+1); });
+      return x;
+    });
+  }
+  enviar(0)
   .then(function(x){
     var bien = x.ok && !(x.j && (x.j.success===false || x.j.success==='false'));
-    if(!bien) throw new Error('envio');
+    if(!bien) throw new Error('envio '+(x.j&&x.j.error||x.status));
     f.style.display='none'; document.getElementById('ok').style.display='block'; window.scrollTo({top:0,behavior:'smooth'});
   })
-  .catch(function(){ err.style.display='block'; btn.disabled=false; btn.textContent=T('btn')||'Enviar mi local a Brosin'; });
+  .catch(function(e){
+    if(window.console) console.warn('Brosin formulario:', e && e.message);
+    err.style.display='block';
+    /* Plan B: un correo con todos los datos ya escritos, para que el alta
+       no se pierda nunca aunque Forminit esté caído. */
+    var lm=document.getElementById('errMail');
+    if(lm){ var lineas=[]; new FormData(f).forEach(function(v,k){ if(k.charAt(0)!=='_' && k!=='Web_empresa' && String(v).trim()) lineas.push(k+': '+v); });
+      lm.href='mailto:hola@brosin.app?subject='+encodeURIComponent('Alta en Brosin: '+((f.querySelector('[name="Nombre"]')||{}).value||''))+'&body='+encodeURIComponent(lineas.join('\n'));
+      lm.style.display='block'; }
+    /* 6 s sin poder reintentar: así el siguiente intento no choca con el límite */
+    setTimeout(function(){ btn.disabled=false; btn.textContent=T('btn')||'Enviar mi local a Brosin'; },6000);
+  });
 });
 </script>
 </body>
