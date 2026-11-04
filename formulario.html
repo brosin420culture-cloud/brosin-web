@@ -483,7 +483,7 @@ function prepararImagenes(){
    Forminit gratis solo admite 100 envíos al mes y, al pasarse, los
    rechaza y se pierden. Desde el 4-nov-2026 cada alta va primero a
    nuestro propio receptor (hoja de Google + carpeta de Drive + correo).
-   Si no contesta bien en 25 s, se manda por Forminit como antes. Código
+   Si no contesta bien en 25 s (50 s con imágenes), se manda por Forminit. Código
    del receptor: brosin-app/_dev/receptor-altas/Code.gs */
 var ENVIO_G='https://script.google.com/macros/s/AKfycbzrwYS-apf-tFgHMj2wMfwUUZgAgI_qlq5pnW3HzfYgg3MEUYKsLCY2llVSmBam3zSSZg/exec';
 function aDataURL(b){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ res(r.result); }; r.onerror=rej; r.readAsDataURL(b); }); }
@@ -502,7 +502,8 @@ function enviarGoogle(arch){
   .then(function(imgs){
     var cuerpo=JSON.stringify({campos:campos, imagenes:imgs, _ms:Date.now()-abiertoEn,
       _lang:(document.documentElement.lang||''), _pagina:location.pathname+location.search, _ua:navigator.userAgent});
-    var tiempo=new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('tiempo')); },25000); });
+    /* con imágenes Google tarda más (las guarda en Drive): 50 s; sin ellas, 25 s */
+    var tiempo=new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('tiempo')); },imgs.length?50000:25000); });
     var envio=fetch(ENVIO_G,{method:'POST',body:cuerpo,headers:{'Content-Type':'text/plain;charset=utf-8'}})
       .then(function(r){ return r.json(); })
       .then(function(j){ if(!j || !j.ok) throw new Error('receptor '+(j&&j.error)); return {ok:true,status:200,j:{success:true,receptor:'google',id:j.id}}; });
