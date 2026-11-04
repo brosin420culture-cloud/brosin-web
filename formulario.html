@@ -84,6 +84,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #brosinTheme svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 #brosinLang{font-family:var(--font);font-size:13px;font-weight:600;background:var(--card);color:var(--texto);border:1px solid var(--borde);border-radius:var(--r-pill);padding:7px 12px;cursor:pointer}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
+/* Logo y fotos (4-nov-2026) */
+.imgs-ayuda{font-size:12.5px;color:var(--texto-2);margin:2px 0 8px;line-height:1.45}
+.imgs-sub{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.imgs-sub input[type=file]{padding:10px;font-size:14px}
+.imgs-prev{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.imgs-prev img.es-logo{object-fit:contain;padding:4px}
+.imgs-prev img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--borde);background:#fff}
+@media(max-width:560px){.imgs-sub{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -141,6 +150,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
       <div><label data-i18n="l_horario">Horario</label><input name="Horario" placeholder="Ej: L–S 12:00–23:30" data-i18n-ph="ph_horario"></div>
       <div><label data-i18n="l_redes">Instagram / Web</label><input name="Instagram o web" placeholder="Ej: @tuclub o tuweb.es" data-i18n-ph="ph_redes"></div>
       <div class="full"><label data-i18n="l_desc">Descripción corta</label><textarea name="Descripcion" placeholder="Ambiente, qué ofreces…" data-i18n-ph="ph_desc"></textarea></div>
+      <!-- ── Logo y fotos (opcional) ───────────────────────────────
+           Se reducen en el navegador antes de enviarlas (logo ≤ 800 px,
+           fotos ≤ 1600 px). En clubes, coffeeshops y farmacias solo se
+           pide el logo: sus fotos no se publican (ver build-publico). -->
+      <div class="full" id="bloqueImgs">
+        <label data-i18n="l_imgs">Logo y fotos (opcional)</label>
+        <div class="imgs-ayuda" data-i18n="imgs_ayuda">Fachada, escaparate o mostrador. Sin personas y sin consumo. Las reducimos antes de enviarlas.</div>
+        <div class="imgs-sub">
+          <div><label for="fLogo" data-i18n="l_logo">Logo</label><input type="file" id="fLogo" name="Logo" accept="image/png,image/jpeg,image/webp,image/svg+xml"></div>
+          <div id="cajaFotos"><label for="fFotos" data-i18n="l_fotos">Fotos del local (hasta 4)</label><input type="file" id="fFotos" name="Fotos" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" multiple></div>
+        </div>
+        <div class="imgs-prev" id="prevImgs" aria-live="polite"></div>
+        <div class="imgs-ayuda" id="notaCsc" data-i18n="imgs_csc" hidden>En clubes, coffeeshops y farmacias solo publicamos el logo.</div>
+        <div class="imgs-ayuda" data-i18n="imgs_permiso">Al subirlas, autorizas que Brosin las publique en tu ficha.</div>
+      </div>
     </div>
 
     <label class="consent">
@@ -162,7 +186,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
-<script src="brosin-i18n.js?v=brosin-eu-1"></script>
+<script src="brosin-i18n.js?v=brosin-eu-2"></script>
 <script>
 var f=document.getElementById('f');
 /* ══ A DÓNDE SE ENVÍA EL FORMULARIO: AQUÍ Y SOLO AQUÍ ══════════════
@@ -184,6 +208,7 @@ function datosParaEnviar(){
       if(/^[^\s@;,]+@[^\s@;,]+\.[a-z]{2,}$/i.test(em)) o.append('fi-sender-email',em); } return; }
     var n=k.toLowerCase().replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i').replace(/[óò]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
            .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    if(typeof File!=='undefined' && v instanceof File) return;   /* las imágenes van aparte, ya reducidas */
     o.append('fi-text-'+n,v);
   });
   return o;
@@ -288,6 +313,7 @@ function datosParaEnviar(){
     });
     /* lo demás, opcional: ya tenemos sus datos */
     f.querySelectorAll('[required]').forEach(function(el){ el.removeAttribute('required'); });
+    var bi=document.getElementById('bloqueImgs'); if(bi) bi.remove();   /* quien se va no sube fotos */
     f.querySelectorAll('.req').forEach(function(el){ el.remove(); });
 
     /* la casilla ya no es un permiso, es una declaración */
@@ -366,7 +392,7 @@ f.addEventListener('submit',function(e){
      contesta «espera» (429), se espera y se reintenta solo, hasta dos
      veces; antes la persona volvía a pulsar enseguida y le salía el
      error una y otra vez (4-nov-2026). */
-  var datos=datosParaEnviar();
+  var datos=null;
   function enviar(intento){
     return fetch(ENVIO,{method:'POST',body:datos,headers:{'Accept':'application/json'}})
     .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ return {ok:r.ok, status:r.status, j:j}; }); })
@@ -376,7 +402,12 @@ f.addEventListener('submit',function(e){
       return x;
     });
   }
-  enviar(0)
+  prepararImagenes().then(function(arch){
+    datos=datosParaEnviar();
+    arch.forEach(function(a){ datos.append(a.campo,a.blob,a.nombre); });
+    if(arch.length) datos.append('fi-text-permiso_imagenes','Sí: autoriza publicar en su ficha el logo y las fotos que ha subido');
+    return enviar(0);
+  })
   .then(function(x){
     var bien = x.ok && !(x.j && (x.j.success===false || x.j.success==='false'));
     if(!bien) throw new Error('envio '+(x.j&&x.j.error||x.status));
@@ -388,13 +419,61 @@ f.addEventListener('submit',function(e){
     /* Plan B: un correo con todos los datos ya escritos, para que el alta
        no se pierda nunca aunque Forminit esté caído. */
     var lm=document.getElementById('errMail');
-    if(lm){ var lineas=[]; new FormData(f).forEach(function(v,k){ if(k.charAt(0)!=='_' && k!=='Web_empresa' && String(v).trim()) lineas.push(k+': '+v); });
+    if(lm){ var lineas=[]; new FormData(f).forEach(function(v,k){ if(typeof File!=='undefined' && v instanceof File) return; if(k.charAt(0)!=='_' && k!=='Web_empresa' && String(v).trim()) lineas.push(k+': '+v); });
+      if(document.getElementById('prevImgs') && document.getElementById('prevImgs').children.length) lineas.push('', '(Adjunta aquí tu logo y tus fotos)');
       lm.href='mailto:hola@brosin.app?subject='+encodeURIComponent('Alta en Brosin: '+((f.querySelector('[name="Nombre"]')||{}).value||''))+'&body='+encodeURIComponent(lineas.join('\n'));
       lm.style.display='block'; }
     /* 6 s sin poder reintentar: así el siguiente intento no choca con el límite */
     setTimeout(function(){ btn.disabled=false; btn.textContent=T('btn')||'Enviar mi local a Brosin'; },6000);
   });
 });
+
+/* ── Logo y fotos ─────────────────────────────────────────────────
+   Las imágenes se reducen aquí mismo antes de enviarlas: una foto de
+   móvil pesa 3-5 MB y Forminit gratis guarda 100 MB en total. Así cada
+   foto queda en ~200-400 KB. Si una imagen no se puede leer (HEIC en
+   un navegador que no lo entiende), se manda tal cual si es pequeña y,
+   si no, se deja fuera: el alta nunca se pierde por una foto. */
+var MAX_FOTOS=4, SIN_FOTOS=/^(Club Social|Coffeeshop|Medicinal)/;
+function tipoSinFotos(){ var t=f.querySelector('[name="Tipo"]'); return !!(t && SIN_FOTOS.test(t.value)); }
+function pintarImgs(){
+  var caja=document.getElementById('cajaFotos'), nota=document.getElementById('notaCsc'), fotos=document.getElementById('fFotos');
+  if(!caja) return;
+  var sin=tipoSinFotos(); caja.hidden=sin; nota.hidden=!sin; if(sin) fotos.value='';
+  var prev=document.getElementById('prevImgs'); prev.innerHTML='';
+  var lista=[].concat(Array.prototype.slice.call(document.getElementById('fLogo').files||[]),
+                      sin?[]:Array.prototype.slice.call(fotos.files||[]).slice(0,MAX_FOTOS));
+  var esLogo=(document.getElementById('fLogo').files||[])[0];
+  lista.forEach(function(fi){ if(!/^image\//.test(fi.type)) return; var im=document.createElement('img'); im.alt=''; if(fi===esLogo) im.className='es-logo'; im.src=URL.createObjectURL(fi); prev.appendChild(im); });
+}
+['Tipo'].forEach(function(n){ var el=f.querySelector('[name="'+n+'"]'); if(el) el.addEventListener('change',pintarImgs); });
+['fLogo','fFotos'].forEach(function(id){ var el=document.getElementById(id); if(el) el.addEventListener('change',pintarImgs); });
+function reducir(fi,lado,conAlfa){
+  return new Promise(function(res){
+    if(fi.type==='image/svg+xml'){ res(fi.size<1500000?{blob:fi,nombre:fi.name}:null); return; }
+    var url=URL.createObjectURL(fi), im=new Image();
+    im.onload=function(){
+      var k=Math.min(1,lado/Math.max(im.naturalWidth,im.naturalHeight)), c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.naturalWidth*k)); c.height=Math.max(1,Math.round(im.naturalHeight*k));
+      var x=c.getContext('2d'); if(!conAlfa){ x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); }
+      x.drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(url);
+      var tipo=conAlfa?'image/png':'image/jpeg', ext=conAlfa?'.png':'.jpg';
+      c.toBlob(function(b){ res(b?{blob:b,nombre:(fi.name||'imagen').replace(/\.[^.]+$/,'')+ext}:null); },tipo,0.82);
+    };
+    im.onerror=function(){ URL.revokeObjectURL(url); res(fi.size<4000000?{blob:fi,nombre:fi.name}:null); };
+    im.src=url;
+  });
+}
+function prepararImagenes(){
+  var tareas=[], logo=document.getElementById('fLogo'), fotos=document.getElementById('fFotos');
+  if(logo && logo.files && logo.files[0]) tareas.push(reducir(logo.files[0],800,true).then(function(r){ return r&&{campo:'fi-file-logo',blob:r.blob,nombre:r.nombre}; }));
+  if(fotos && fotos.files && !tipoSinFotos()) Array.prototype.slice.call(fotos.files,0,MAX_FOTOS).forEach(function(fi){
+    tareas.push(reducir(fi,1600,false).then(function(r){ return r&&{campo:'fi-file-fotos[]',blob:r.blob,nombre:r.nombre}; }));
+  });
+  return Promise.all(tareas).then(function(l){
+    var total=0; return l.filter(function(a){ if(!a) return false; total+=a.blob.size; return total<20000000; });
+  });
+}
 </script>
 </body>
 </html>
