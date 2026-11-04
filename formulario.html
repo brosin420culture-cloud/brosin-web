@@ -498,6 +498,9 @@ function enviarGoogle(arch){
     campos[k]=v;
   });
   if(arch.length) campos['Permiso imagenes']='Sí: autoriza publicar en su ficha el logo y las fotos que ha subido';
+  /* el código del país (ES, DE…): el nombre sale en el idioma de cada visitante */
+  var sp=document.getElementById('fPais'), op=sp&&sp.options[sp.selectedIndex];
+  if(op && op.getAttribute('data-cc')) campos['Codigo pais']=op.getAttribute('data-cc');
   return Promise.all(arch.map(function(a){ return aDataURL(a.blob).then(function(u){ return {campo:a.campo.indexOf('logo')>=0?'logo':'foto', data:u}; }); }))
   .then(function(imgs){
     var cuerpo=JSON.stringify({campos:campos, imagenes:imgs, _ms:Date.now()-abiertoEn,
