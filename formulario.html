@@ -403,10 +403,14 @@ f.addEventListener('submit',function(e){
     });
   }
   prepararImagenes().then(function(arch){
-    datos=datosParaEnviar();
-    arch.forEach(function(a){ datos.append(a.campo,a.blob,a.nombre); });
-    if(arch.length) datos.append('fi-text-permiso_imagenes','Sí: autoriza publicar en su ficha el logo y las fotos que ha subido');
-    return enviar(0);
+    /* 1.º nuestro receptor de Google (sin límite de envíos); si falla, Forminit */
+    return enviarGoogle(arch).catch(function(e){
+      if(window.console) console.warn('Brosin: receptor de Google no disponible, voy por Forminit', e && e.message);
+      datos=datosParaEnviar();
+      arch.forEach(function(a){ datos.append(a.campo,a.blob,a.nombre); });
+      if(arch.length) datos.append('fi-text-permiso_imagenes','Sí: autoriza publicar en su ficha el logo y las fotos que ha subido');
+      return enviar(0);
+    });
   })
   .then(function(x){
     var bien = x.ok && !(x.j && (x.j.success===false || x.j.success==='false'));
@@ -472,6 +476,37 @@ function prepararImagenes(){
   });
   return Promise.all(tareas).then(function(l){
     var total=0; return l.filter(function(a){ if(!a) return false; total+=a.blob.size; return total<20000000; });
+  });
+}
+
+/* ══ RECEPTOR PRINCIPAL: Google Apps Script de brosin420culture ══════
+   Forminit gratis solo admite 100 envíos al mes y, al pasarse, los
+   rechaza y se pierden. Desde el 4-nov-2026 cada alta va primero a
+   nuestro propio receptor (hoja de Google + carpeta de Drive + correo).
+   Si no contesta bien en 25 s, se manda por Forminit como antes. Código
+   del receptor: brosin-app/_dev/receptor-altas/Code.gs */
+var ENVIO_G='https://script.google.com/macros/s/AKfycbzrwYS-apf-tFgHMj2wMfwUUZgAgI_qlq5pnW3HzfYgg3MEUYKsLCY2llVSmBam3zSSZg/exec';
+function aDataURL(b){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ res(r.result); }; r.onerror=rej; r.readAsDataURL(b); }); }
+function enviarGoogle(arch){
+  if(!ENVIO_G) return Promise.reject(new Error('sin receptor'));
+  var campos={};
+  new FormData(f).forEach(function(v,k){
+    if(typeof File!=='undefined' && v instanceof File) return;
+    if(k==='Web_empresa') return;
+    if(k==='_subject'){ campos.Asunto=v; return; }
+    if(k.charAt(0)==='_') return;
+    campos[k]=v;
+  });
+  if(arch.length) campos['Permiso imagenes']='Sí: autoriza publicar en su ficha el logo y las fotos que ha subido';
+  return Promise.all(arch.map(function(a){ return aDataURL(a.blob).then(function(u){ return {campo:a.campo.indexOf('logo')>=0?'logo':'foto', data:u}; }); }))
+  .then(function(imgs){
+    var cuerpo=JSON.stringify({campos:campos, imagenes:imgs, _ms:Date.now()-abiertoEn,
+      _lang:(document.documentElement.lang||''), _pagina:location.pathname+location.search, _ua:navigator.userAgent});
+    var tiempo=new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('tiempo')); },25000); });
+    var envio=fetch(ENVIO_G,{method:'POST',body:cuerpo,headers:{'Content-Type':'text/plain;charset=utf-8'}})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(!j || !j.ok) throw new Error('receptor '+(j&&j.error)); return {ok:true,status:200,j:{success:true,receptor:'google',id:j.id}}; });
+    return Promise.race([envio,tiempo]);
   });
 }
 </script>
