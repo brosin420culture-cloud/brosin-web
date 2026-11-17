@@ -186,7 +186,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
-<script src="brosin-i18n.js?v=brosin-eu-4"></script>
+<script src="brosin-i18n.js?v=brosin-eu-5"></script>
 <script>
 var f=document.getElementById('f');
 /* ══ A DÓNDE SE ENVÍA EL FORMULARIO: AQUÍ Y SOLO AQUÍ ══════════════
@@ -238,7 +238,7 @@ function datosParaEnviar(){
     sel.innerHTML='';
     nombres(lang).forEach(function(p){ var o=document.createElement('option'); o.value=p.name; o.setAttribute('data-cc',p.code); o.textContent=p.name; sel.appendChild(o); });
     var P=new URLSearchParams(location.search);
-    var cc=(P.get('pais')||'').toUpperCase();
+    var cc='';   /* el país lo elige el local (sin rellenar desde el enlace) */
     if(!cc && actualCC) cc=actualCC;   /* al cambiar de idioma se conserva lo elegido */
     if(!cc){ var nav=(navigator.language||'').split('-')[1]; if(nav && EN[nav.toUpperCase()]) cc=nav.toUpperCase(); }
     if(!cc) cc=LANG2CC[lang]||'ES';
@@ -253,29 +253,14 @@ function datosParaEnviar(){
   var ls=document.getElementById('brosinLang'); if(ls) ls.addEventListener('change',function(){ pintar(ls.value); });
 })();
 
-/* ── Prellenado desde la ficha del mapa ────────────────────────────
-   La app enlaza aquí con los datos que ya tenemos, para que el local
-   solo tenga que completar lo que falta (horario, web, descripción)
-   en vez de escribirlo todo otra vez. */
+/* ── Enlaces del mapa: «Actualizar», «Avisar de un error», «Quitar» ──
+   El formulario NO se rellena con los datos de la ficha (decisión de
+   Jorge, 12-nov-2026): lo rellena el propio local con sus datos, para
+   que lleguen bien. Del enlace solo se usa el número de ficha y el
+   modo, para saber de qué ficha se habla y qué pide. */
 (function(){
   var P=new URLSearchParams(location.search);
   if(!P.get('id')) return;
-
-  var TIPOS={csc:'Club Social de Cannabis (CSC)',grow:'Grow shop',cbd:'Tienda de CBD',
-             coffeeshop:'Coffeeshop',medicinal:'Medicinal',empresa:'Empresa del sector'};
-  function set(sel,val){ if(!val) return; var el=f.querySelector(sel); if(el) el.value=val; }
-
-  set('[name="Nombre"]',    P.get('nombre'));
-  set('[name="Ciudad"]',    P.get('ciudad'));
-  set('[name="Provincia"]', P.get('prov'));
-  set('[name="Direccion"]', P.get('dir'));
-  set('[name="Telefono"]',  P.get('tel'));
-  set('[name="Email"]',     P.get('email'));
-  set('[name="Instagram o web"]', P.get('web'));
-
-  var tipo=TIPOS[P.get('tipo')];
-  if(tipo){ var sel=f.querySelector('[name="Tipo"]');
-    for(var i=0;i<sel.options.length;i++) if(sel.options[i].text===tipo){ sel.selectedIndex=i; break; } }
 
   var modo=P.get('modo')||'alta';
   document.getElementById('fFicha').value='#'+P.get('id')+' ('+modo+')';
@@ -335,6 +320,27 @@ function datosParaEnviar(){
     f.querySelector('.grid').appendChild(qué);
   }
 
+  /* ── Modo actualizar (17-nov-2026) ─────────────────────────────
+     Quien ya está en el mapa viene a cambiar o añadir algo (una foto,
+     el horario…), no a escribirlo todo otra vez: King Kong Grow no
+     pudo terminarlo y Top-Garden se quejó. Sigue sin venir relleno
+     (lo escribe el local); solo es obligatorio el nombre, para saber
+     quién es, y la casilla del permiso. Lo vacío se queda como está. */
+  if(modo!=='baja' && modo!=='error'){
+    f.querySelectorAll('[required]').forEach(function(el){
+      if(el.name==='Nombre' || el.name==='Consentimiento') return;
+      el.removeAttribute('required');
+      var d=el.closest('div'), r=d && d.querySelector('.req'); if(r) r.remove();
+    });
+    /* El país tampoco viene puesto: si no lo toca, no se cambia (antes
+       salía «España» por el idioma del navegador y se mandaba sin querer). */
+    var paisVacio=function(){ var s=document.getElementById('fPais'); if(!s || s.querySelector('option[value=""]')) return;
+      var o=document.createElement('option'); o.value=''; o.textContent='—'; s.insertBefore(o,s.firstChild); if(!paisTocado) s.value=''; };
+    var paisTocado=false, sp=document.getElementById('fPais'); if(sp) sp.addEventListener('change',function(){ if(sp.value) paisTocado=true; });
+    paisVacio();
+    document.addEventListener('change',function(e){ if(e.target && e.target.id==='brosinLang') setTimeout(paisVacio,50); });
+  }
+
   /* Aviso arriba, para que se entienda qué está pasando */
   var box=document.createElement('div');
   box.className='intro';
@@ -343,10 +349,18 @@ function datosParaEnviar(){
   box.textContent =
     modo==='baja'  ? T('b_aviso','Vas a pedir la baja de «{n}». Comprueba que es tu local y envía.')
                        .replace('{n}', P.get('nombre')||'') :
-    modo==='error' ? 'Estás avisando de un error en la ficha de "'+(P.get('nombre')||'')+'". Corrige lo que esté mal y envía.' :
-                     'Ya hemos rellenado lo que sabemos de "'+(P.get('nombre')||'')+'". Revísalo y completa lo que falte.';
+    modo==='error' ? 'Estás avisando de un error en la ficha de "'+(P.get('nombre')||'')+'". Rellena el formulario con los datos correctos y envía.' :
+                     T('u_aviso','Vas a actualizar la ficha de «{n}». Escribe solo lo que quieras cambiar o añadir: lo que dejes vacío se queda como está.').replace('{n}', P.get('nombre')||'');
   var intro=document.querySelector('.intro');
   intro.parentNode.insertBefore(box,intro);
+  /* Actualizar: la nota gris dice qué es obligatorio en un alta nueva
+     (tipo, ciudad, dirección) y aquí no lo es; y el aviso amarillo sigue
+     al idioma si lo cambian arriba. */
+  if(modo!=='baja' && modo!=='error'){
+    intro.style.display='none';
+    var avisoAct=function(){ box.textContent=T('u_aviso','Vas a actualizar la ficha de «{n}». Escribe solo lo que quieras cambiar o añadir: lo que dejes vacío se queda como está.').replace('{n}', P.get('nombre')||''); };
+    document.addEventListener('change',function(e){ if(e.target && e.target.id==='brosinLang') setTimeout(avisoAct,50); });
+  }
 
   /* Ahora que están puestas todas las claves, se traduce la página
      entera al idioma de quien mira. Esto tiene que ir al final. */
@@ -453,6 +467,40 @@ function pintarImgs(){
 }
 ['Tipo'].forEach(function(n){ var el=f.querySelector('[name="'+n+'"]'); if(el) el.addEventListener('change',pintarImgs); });
 ['fLogo','fFotos'].forEach(function(id){ var el=document.getElementById(id); if(el) el.addEventListener('change',pintarImgs); });
+/* ── Aviso del logo (17-nov-2026) ─────────────────────────────────
+   Se mira el logo en el navegador al elegirlo y se avisa, sin impedir
+   el envío, si casi no se va a ver (blanco o muy claro sobre
+   transparente, o casi vacío) o si parece una foto del local. */
+(function(){
+  var inp=document.getElementById('fLogo'); if(!inp) return;
+  var av=document.createElement('p'); av.id='avisoLogo'; av.hidden=true;
+  av.style.cssText='margin:6px 0 0;padding:8px 10px;border-radius:8px;background:#FFF4C2;color:#0A0A0A;font-size:13px;line-height:1.4';
+  inp.parentNode.appendChild(av);
+  var T=function(k,alt){ var v=window.BrosinI18n?BrosinI18n.t(k):''; return v||alt; };
+  inp.addEventListener('change',function(){
+    av.hidden=true; var fi=inp.files&&inp.files[0]; if(!fi || !/^image\//.test(fi.type)) return;
+    var url=URL.createObjectURL(fi), im=new Image();
+    im.onload=function(){
+      try{
+        var w=Math.min(200,im.naturalWidth||200), h=Math.max(1,Math.round((im.naturalHeight||200)*w/(im.naturalWidth||200)));
+        var c=document.createElement('canvas'); c.width=w; c.height=h; var x=c.getContext('2d'); x.drawImage(im,0,0,w,h);
+        var d=x.getImageData(0,0,w,h).data, tr=0, vis=0, cl=0, col={}, nc=0;
+        for(var i=0;i<d.length;i+=4){
+          if(d[i+3]<30){ tr++; continue; } vis++;
+          if(d[i]>170&&d[i+1]>150&&d[i+2]>130) cl++;
+          var k=(d[i]>>4)+','+(d[i+1]>>4)+','+(d[i+2]>>4); if(!col[k]){ col[k]=1; nc++; }
+        }
+        var tot=d.length/4, msg='';
+        if((tr/tot>0.3 && vis && cl/vis>0.8) || vis/tot<0.05) msg=T('img_logo_claro','Tu logo casi no se verá en el mapa: es muy claro o apenas ocupa la imagen. Si tienes otra versión (oscura o con fondo), súbela mejor.');
+        else if(tr/tot<0.01 && nc>900) msg=T('img_logo_foto','Esto parece una foto, no un logo. Si es la foto de tu local, súbela en «Fotos del local».');
+        if(msg){ av.textContent=msg; av.hidden=false; }
+      }catch(e){}
+      URL.revokeObjectURL(url);
+    };
+    im.onerror=function(){ URL.revokeObjectURL(url); };
+    im.src=url;
+  });
+})();
 function reducir(fi,lado,conAlfa){
   return new Promise(function(res){
     if(fi.type==='image/svg+xml'){ res(fi.size<1500000?{blob:fi,nombre:fi.name}:null); return; }
